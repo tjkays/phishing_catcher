@@ -14,6 +14,7 @@ import tqdm
 import entropy
 import smtplib
 import string
+import dns.resolver
 
 log_suspicious = 'suspicious_domains.log'
 
@@ -140,20 +141,23 @@ def checkcf(domain):
     if domain[:4] == 'www.':
         domain = domain[4:]
     answers = dns.resolver.query(domain, 'NS')
-    print answers
+    nserver = []
+    for rdata in answers:
+        nserver.append(rdata.target.to_text())
+
     if answers:
-        if any("ns.cloudflare.com" in s.lower() for s in answers):
+        if any("ns.cloudflare.com" in s.lower() for s in nserver):
             with open('cloudflare.txt', 'a') as f:
-                f.write(domain + '\n' + ', '.join(answers) + "\n\n")
-        elif any("inmotionhosting.com" in s.lower() for s in answers):
+                f.write(domain + '\n' + ', '.join(nserver) + "\n\n")
+        elif any("inmotionhosting.com" in s.lower() for s in nserver):
             sendmail(domain, "abuse@inmotionhosting.com")
-        elif any("webhostinghub.com" in s.lower() for s in w.answers):
+        elif any("webhostinghub.com" in s.lower() for s in nserver):
             sendmail(domain, "abuse@webhostinghub.com")
-        elif any("servconfig.com" in s.lower() for s in w.answers):
+        elif any("servconfig.com" in s.lower() for s in nserver):
             sendmail(domain, "abuse@inmotionhosting.com")
         else:
             with open('notcloudflare.txt', 'a') as f:
-                f.write(domain + '\n' + ', '.join(answers) + "\n\n")
+                f.write(domain + '\n' + ', '.join(nserver) + "\n\n")
 
 
 def score_domain(domain):
