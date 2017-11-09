@@ -26,6 +26,7 @@ suspicious_keywords = [
     'verify',
     'support',
     'activity',
+    'authorize',
     'security',
     'update',
     'authentication',
@@ -36,7 +37,15 @@ suspicious_keywords = [
     'transaction',
     'recover',
     'live',
-    'office'
+    'office',
+    'federal',
+    'benefit',
+    'wordpress',
+    'sprint',
+    'apple',
+    'phishing',
+    'target',
+    'income'
     ]
 
 highly_suspicious = [
@@ -67,46 +76,60 @@ highly_suspicious = [
     '.org-',
     '.gov-',
     '.gouv-',
-    '-gouv-'
+    '-gouv-',
+    'hack',
+    'password',
+    'bank',
+    'chase',
+    'wells-fargo',
+    'citigroup',
+    'equifax',
+    'goldman',
+    'morganstanley',
+    'wellsfargo',
+    'morgan-stanley',
+    'bancorp',
+    'capitalone',
+    'capital-one',
+    'tdbank',
+    'td-bank',
+    't-d-bank',
+    'financial',
+    'hsbc',
+    'trump',
+    'google',
+    'slack',
+    'itunes',
+    'linkedin',
+    'yahoo',
+    'reddit',
+    'tmall',
+    'yandex',
+    'netflix',
+    'pornhub',
+    'ebay',
+    'alipay',
+    'etsy',
+    'microsoft',
+    'tmobile',
+    't-mobile',
+    'metropcs',
+    'walmart',
+    'wal-mart',
+    'bestbuy',
+    'best-buy',
+    'support',
+    'download'
     ]
 
 suspicious_tld = [
-    '.ga',
-    '.gq',
-    '.ml',
-    '.cf',
-    '.tk',
-    '.xyz',
-    '.pw',
-    '.cc',
-    '.club',
-    '.work',
     '.top',
-    '.support',
     '.bank',
-    '.info',
-    '.study',
-    '.party',
-    '.click',
-    '.country',
     '.stream',
-    '.gdn',
-    '.mom',
-    '.xin',
-    '.kim',
-    '.men',
     '.loan',
     '.download',
-    '.racing',
     '.online',
-    '.ren',
-    '.gb',
-    '.win',
-    '.review',
-    '.vip',
-    '.party',
-    '.tech',
-    '.science'
+    '.win'
     ]
 
 pbar = tqdm.tqdm(desc='certificate_update', unit='cert')
@@ -114,8 +137,8 @@ pbar = tqdm.tqdm(desc='certificate_update', unit='cert')
 
 def sendmail(domain, toaddr):
     """Python SMTP"""
-    fromaddr = "abusedetect@equifaxitsecurity.com"
-    frompass = "^vmAdYk}^CY,"
+    fromaddr = ""
+    frompass = ""
     host = "localhost"
     subject = "Possible malicious site: " + domain
     text = "The domain " + domain + " was detected on your network as possibly malicious.\n\nThis is a python script using certstream to detect suspicious domains.  While not foolproof, this domain was detected as possibly fraudulent."
@@ -150,11 +173,14 @@ def checkcf(domain):
             with open('cloudflare.txt', 'a') as f:
                 f.write(domain + '\n' + ', '.join(nserver) + "\n\n")
         elif any("inmotionhosting.com" in s.lower() for s in nserver):
-            sendmail(domain, "abuse@inmotionhosting.com")
+            #sendmail(domain, "abuse@inmotionhosting.com")
+            print "email abuse"
         elif any("webhostinghub.com" in s.lower() for s in nserver):
-            sendmail(domain, "abuse@webhostinghub.com")
+            #sendmail
+            print "email abuse"
         elif any("servconfig.com" in s.lower() for s in nserver):
-            sendmail(domain, "abuse@inmotionhosting.com")
+            #sendmail(domain, "abuse@inmotionhosting.com")
+            print "email abuse"
         else:
             with open('notcloudflare.txt', 'a') as f:
                 f.write(domain + '\n' + ', '.join(nserver) + "\n\n")
@@ -169,16 +195,20 @@ def score_domain(domain):
         int: the score of `domain`.
     """
     score = 0
+    mult = 1
     for tld in suspicious_tld:
         if domain.endswith(tld):
             score += 20
+            mult += 1
     for keyword in suspicious_keywords:
         if keyword in domain:
             score += 25
+            mult += 1
     for keyword in highly_suspicious:
         if keyword in domain:
             score += 60
-    score += int(round(entropy.shannon_entropy(domain)*50))
+            mult += 1
+    score += (int(round(entropy.shannon_entropy(domain)*50))) * mult
 
     # Lots of '-' (ie. www.paypal-datacenter.com-acccount-alert.com)
     if 'xn--' not in domain and domain.count('-') >= 4:
@@ -197,7 +227,7 @@ def callback(message, context):
         for domain in all_domains:
             pbar.update(1)
             score = score_domain(domain)
-            if score > 75:
+            if score > 100:
                 tqdm.tqdm.write(
                     "\033[91mSuspicious: "
                     "\033[4m{}\033[0m\033[91m (score={})\033[0m".format(domain,
@@ -205,7 +235,7 @@ def callback(message, context):
                 with open(log_suspicious, 'a') as f:
                     f.write("{}\n".format(domain))
                     checkcf(domain)
-            elif score > 65:
+            elif score > 200:
                 tqdm.tqdm.write(
                     "Potential: "
                     "\033[4m{}\033[0m\033[0m (score={})".format(domain, score))
