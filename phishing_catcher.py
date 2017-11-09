@@ -140,7 +140,7 @@ def checkcf(domain):
     if domain[:4] == 'www.':
         domain = domain[4:]
     answers = dns.resolver.query(domain, 'NS')
-
+    print answers
     if answers:
         if any("ns.cloudflare.com" in s.lower() for s in answers):
             with open('cloudflare.txt', 'a') as f:
